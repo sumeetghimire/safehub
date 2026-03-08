@@ -16,68 +16,48 @@
 
 ## Prerequisites
 
+SafeHub requires these binaries on your PATH (declared in skill metadata):
+
 - **Node.js 18+**
-- **Semgrep** (required for static analysis):  
+- **Semgrep** (required for the scan command):  
   `npm install -g semgrep` or `brew install semgrep`
-- **Docker** (optional): used for sandbox execution. The sandbox runs skills in an isolated container; SafeHub needs Docker available on your machine if you do not use `--no-sandbox`. If Docker is not installed or not running, use `--no-sandbox` to run static analysis only.
+- **git** (required when scanning a GitHub URL):  
+  used to clone repos; usually already installed.
+
+**Optional:**
+
+- **Docker** — used for sandbox execution. If Docker is not available, use `--no-sandbox` for static-only scanning.
 
 ---
 
-## Installation
+## How to use
 
-### Install SafeHub (users)
+### 1. Install SafeHub
 
-**Via OpenClaw (once published on ClawHub):**
+**Option A — From ClawHub (recommended):**
 
 ```bash
-openclaw install safehub
+npm install -g clawhub
+clawhub login
+clawhub install safehub
 ```
 
-Then run scans with: `openclaw run safehub scan <skill>`.
+SafeHub is installed into `./skills/safehub` (or your configured skills dir). Run it with Node:
 
-**Via npm (global CLI):**
+```bash
+node ./skills/safehub/index.js scan web-scraper
+node ./skills/safehub/index.js scan ./my-local-skill --no-sandbox
+node ./skills/safehub/index.js report web-scraper
+node ./skills/safehub/index.js update
+```
+
+**Option B — Global CLI via npm:**
 
 ```bash
 npm install -g safehub
 ```
 
-Then run `safehub scan <target>`, `safehub report <name>`, or `safehub update` directly.
-
-### Publish SafeHub to ClawHub (maintainers)
-
-To publish or update SafeHub on the ClawHub registry:
-
-1. Install the ClawHub CLI:
-   ```bash
-   npm install -g clawhub
-   ```
-2. Log in (browser or token):
-   ```bash
-   clawhub login
-   ```
-3. From the SafeHub repo root, publish:
-   ```bash
-   clawhub publish . --slug safehub --name "SafeHub" --version 1.0.0 --changelog "Initial release" --tags latest
-   ```
-
-Use `clawhub sync` to scan and publish multiple skills, or `clawhub publish ./path --slug safehub ...` for a single skill folder.
-
-### Local development
-
-From the project root:
-
-```bash
-npm install
-npm link
-```
-
-After linking, `safehub` is available in your shell. For `openclaw run safehub` to work, OpenClaw must be able to run the `safehub` command (i.e. SafeHub must be installed globally or linked as above).
-
----
-
-## Usage
-
-**CLI (direct):**
+Then from anywhere:
 
 ```bash
 safehub scan web-scraper
@@ -87,15 +67,37 @@ safehub report web-scraper
 safehub update
 ```
 
-**OpenClaw:**
-
-Once the `safehub` CLI is on your PATH, you can run it via OpenClaw:
+**Option C — Local development:**
 
 ```bash
-openclaw run safehub scan web-scraper
-openclaw run safehub scan ./my-local-skill
-openclaw run safehub report web-scraper
-openclaw run safehub update
+git clone https://github.com/sumeetghimire/safehub.git && cd safehub
+npm install
+npm link
+safehub scan ./test-fixtures/risky-skill --no-sandbox
+```
+
+### 2. Run a scan
+
+Replace `<target>` with a ClawHub skill name, a local path, or a GitHub URL (no angle brackets):
+
+```bash
+safehub scan web-scraper
+safehub scan .
+safehub scan ./some-skill
+safehub scan https://github.com/user/repo
+```
+
+Use `--no-sandbox` to skip Docker and run static analysis only:
+
+```bash
+safehub scan https://github.com/user/repo --no-sandbox
+```
+
+### 3. View last report or update rules
+
+```bash
+safehub report <skill-name>
+safehub update
 ```
 
 ---
@@ -107,15 +109,15 @@ openclaw run safehub update
 Scan a skill by **name** (from ClawHub), **local path**, or **GitHub URL**:
 
 ```bash
-openclaw run safehub scan web-scraper
-openclaw run safehub scan ./my-local-skill
-openclaw run safehub scan https://github.com/someone/their-skill
+safehub scan web-scraper
+safehub scan ./my-local-skill
+safehub scan https://github.com/someone/their-skill
 ```
 
 To skip Docker and run only static analysis (e.g. if Docker is not installed):
 
 ```bash
-openclaw run safehub scan ./my-local-skill --no-sandbox
+safehub scan ./my-local-skill --no-sandbox
 ```
 
 **Example output:**
@@ -145,7 +147,7 @@ RECOMMENDATION: Do not install this skill.
 Show the last scan report for a skill without rescanning:
 
 ```bash
-openclaw run safehub report web-scraper
+safehub report web-scraper
 ```
 
 ### Update scanner rules
@@ -153,43 +155,74 @@ openclaw run safehub report web-scraper
 Download the latest Semgrep rules from the SafeHub repo (or your fork):
 
 ```bash
-openclaw run safehub update
+safehub update
 ```
 
-Optional: set `SAFEHUB_RULES_REPO=owner/repo` to use a different GitHub repo; set `SAFEHUB_RULES_BRANCH` (default `main`) for the branch name.
+See [Environment variables](#environment-variables) below for `SAFEHUB_RULES_REPO`, `SAFEHUB_RULES_BRANCH`, and other options.
 
 ---
 
-## Publishing to ClawHub
+## Environment variables
 
-To list SafeHub on the [ClawHub](https://clawhub.ai) marketplace so users can discover and install it:
+All are optional. No secrets or API tokens are required by default.
 
-1. **Create a ClawHub developer account**  
-   Go to [clawhub.ai](https://clawhub.ai) → Sign up → choose **Developer Account** → complete profile (display name, bio, GitHub link) → verify your email. Your GitHub account should be at least one week old.
+| Variable | Default | Effect |
+|----------|---------|--------|
+| **SAFEHUB_RULES_REPO** | `safehub/safehub` | GitHub repo (owner/repo) used by `safehub update`. The updater **fetches and overwrites** local rule files in `./rules` from this repo. Only set this to a repo you trust. |
+| **SAFEHUB_RULES_BRANCH** | `main` | Branch used when fetching rules. |
+| **SAFEHUB_DATA_DIR** | `~/.safehub` | Directory for cached scan reports. |
+| **SAFEHUB_SANDBOX_IMAGE** | `node:18-alpine` | Docker image for the sandbox. |
+| **SAFEHUB_SANDBOX_TIMEOUT_MS** | `30000` | Sandbox timeout in milliseconds. |
+| **SAFEHUB_NO_TYPING** | (unset) | Set to `1` to disable typing-effect output (e.g. CI/pipes). |
 
-2. **Metadata**  
-   The repo already includes **`clawhub.json`** with name, tagline, description, category (`utility`), tags, version, license, and `support_url` / `homepage` pointing to this repo. Adjust any fields if needed.
+**Important:** `SAFEHUB_RULES_REPO` controls where rules are downloaded from and overwrites local `./rules`; only point it at a trusted repo.
 
-3. **Screenshots**  
-   Add 3–5 screenshots to the **`screenshots/`** folder:
-   - **Resolution:** 1920×1080 or 1280×720 PNG  
-   - **Content:** e.g. terminal running `safehub scan`, example report output, `safehub report` or `safehub update`  
-   - Use real runs (no placeholder text). ClawHub may reject low-quality or generic screenshots.
+---
 
-4. **Optional: demo video**  
-   A 30–90 second video of SafeHub in use (e.g. scanning a skill and showing the report) can strengthen the listing. Host on YouTube or Vimeo and add the URL in the ClawHub submission form.
+## How to release
 
-5. **Submit for review**  
-   - Build the upload package (one folder with only essential files, no `node_modules` or `.git`):  
-     `node scripts/prepare-clawhub.js`  
-     This creates **`clawhub-package/`** and **`safehub-clawhub.zip`** in the repo root.  
-   - In ClawHub dashboard → **Publish New Skill** → upload **`safehub-clawhub.zip`** (or zip the `clawhub-package` folder yourself).  
-   - Fill the form (metadata is pre-filled from `clawhub.json`), upload screenshots, add demo URL if you have one  
-   - In **Permission justification**, state why SafeHub needs **filesystem** (read skill source, write cached reports under `~/.safehub`) and **network** (clone GitHub URLs, optional rule updates)  
-   - Submit for review. Review usually takes 2–5 business days.
+Use this flow to cut a new version and publish it to GitHub and ClawHub.
 
-6. **If you use the ClawHub CLI**  
-   After logging in with `clawhub login` (GitHub auth), you can run `clawhub publish` from the skill root instead of uploading a tarball, if your ClawHub setup supports it.
+### 1. Bump version
+
+Set the new version (e.g. `1.0.2`) in all of:
+
+- `package.json` → `"version": "1.0.2"`
+- `SKILL.md` → frontmatter `version: 1.0.2`
+- `clawhub.json` → `"version": "1.0.2"`
+- `skill.json` → `"version": "1.0.2"`
+
+### 2. Commit and push
+
+```bash
+git add package.json SKILL.md clawhub.json skill.json
+git commit -m "chore: release 1.0.2"
+git push origin main
+```
+
+### 3. Create and push a git tag
+
+```bash
+git tag v1.0.2
+git push origin v1.0.2
+```
+
+Use the same version as above (e.g. `v1.0.2` for version `1.0.2`).
+
+### 4. Publish to ClawHub
+
+```bash
+npm install -g clawhub
+clawhub login
+clawhub publish . --slug safehub --name "SafeHub" --version 1.0.2 --changelog "Short description of changes" --tags latest
+```
+
+Replace `1.0.2` and the changelog text with your release version and notes.
+
+### First-time ClawHub setup
+
+- Sign up at [clawhub.ai](https://clawhub.ai) → Developer Account, verify email (GitHub account at least one week old).
+- Add 3–5 screenshots in `screenshots/` (1920×1080 or 1280×720 PNG) if the listing asks for them.
 
 ---
 
