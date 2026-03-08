@@ -6,3 +6,7 @@ node_modules/
 .safehub/
 .vscode/
 .idea/
+clawhub-package/
+safehub-clawhub.zip
+safehub/
+safehub.zip

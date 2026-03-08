@@ -1,6 +1,6 @@
 {
   "name": "safehub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scans OpenClaw skills for malware and security issues before you install them. Uses Semgrep and Docker sandbox for static and dynamic analysis.",
   "author": "safehub",
   "license": "MIT",

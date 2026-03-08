@@ -1,7 +1,7 @@
 ---
 name: safehub
 description: Scan OpenClaw skills for malware and security issues before installation. Use when the user wants to verify a skill is safe, audit a ClawHub skill, or check a local or GitHub skill.
-version: 1.0.0
+version: 1.0.1
 author: sumeetghimire
 metadata: {"openclaw":{"emoji":"🛡️","requires":{"bins":["node"]},"os":["darwin","linux","win32"]}}
 ---
