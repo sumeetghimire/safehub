@@ -1,6 +1,6 @@
 {
   "name": "safehub",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpenClaw skill that scans other skills for malware and security issues",
   "main": "index.js",
   "bin": {
